@@ -1,0 +1,40 @@
+# Example pysup configuration. Relative paths are resolved against this file.
+supervisor:
+  socket: ./run/pysup.sock
+  pidfile: ./run/pysup.pid
+  log_dir: ./logs
+  log_level: info
+
+programs:
+  web:
+    command: python3 -m http.server 8765 --bind 127.0.0.1
+    directory: .
+    autorestart: always
+    stop_signal: INT
+    stop_timeout: 5
+    priority: 10
+
+  ticker:
+    command: ["sh", "-c", "while true; do echo \"tick $(date +%T) from $GREETING\"; sleep 2; done"]
+    environment:
+      GREETING: hello
+    log_max_bytes: 1MB
+    log_backups: 3
+
+  flaky:
+    # Exits with status 3 after a second; restarted with exponential backoff
+    # until it has failed 4 times in a row, then marked "failed".
+    command: sh -c 'echo starting; sleep 1; echo oops >&2; exit 3'
+    autorestart: on-unexpected-exit
+    startsecs: 0.5
+    backoff:
+      initial: 1
+      multiplier: 2
+      max: 10
+      max_retries: 4
+
+  oneshot:
+    command: echo "ran once"
+    autostart: false
+    autorestart: never
+    startsecs: 0
